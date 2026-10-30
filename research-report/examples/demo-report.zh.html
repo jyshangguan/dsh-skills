@@ -1,26 +1,4 @@
 <!doctype html>
-<!--
-  research-report · self-contained HTML report skeleton
-  ======================================================
-  HOW TO USE (the agent):
-    1. Copy this file to the user's project as report.html (or <topic>-report.html).
-    2. Fill every [方括号占位符]. Delete every block marked "DELETE IF UNUSED".
-    3. Add or remove <section> blocks as the research needs; keep the canonical
-       order: 核心结论 → 研究逻辑 → 关键发现 → 局限与不确定性 → 附录.
-    4. Keep <h2>/<h3> as the only heading levels that carry structure: the table of
-       contents is generated from them at runtime. Do NOT hand-write the TOC.
-    5. Charts: pair a div (class "chart", unique id fig-N, inline height in px) with a
-       following script block of type application/json that carries that ECharts
-       option — see the two examples below. The init code at the bottom of this file
-       is FIXED: never edit or delete it, and never load a chart library from a URL.
-    6. Finish with:  python3 <skill>/scripts/finalize_report.py report.html
-       That inlines the vendored chart libraries into this one file and verifies it
-       is offline-safe. Until then the two LIB placeholders near the bottom stay as
-       comments and every chart shows a "library not inlined" banner.
-  Language: lang="zh-CN" below; switch to lang="en" (and translate the section names)
-  for an English report.
-  Delete this comment block before delivering the report.
--->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
