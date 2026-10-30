@@ -1,4 +1,26 @@
 <!doctype html>
+<!--
+  research-report · self-contained HTML report skeleton
+  ======================================================
+  HOW TO USE (the agent):
+    1. Copy this file to the user's project as report.html (or <topic>-report.html).
+    2. Fill every [方括号占位符]. Delete every block marked "DELETE IF UNUSED".
+    3. Add or remove <section> blocks as the research needs; keep the canonical
+       order: 核心结论 → 研究逻辑 → 关键发现 → 局限与不确定性 → 附录.
+    4. Keep <h2>/<h3> as the only heading levels that carry structure: the table of
+       contents is generated from them at runtime. Do NOT hand-write the TOC.
+    5. Charts: pair a div (class "chart", unique id fig-N, inline height in px) with a
+       following script block of type application/json that carries that ECharts
+       option — see the two examples below. The init code at the bottom of this file
+       is FIXED: never edit or delete it, and never load a chart library from a URL.
+    6. Finish with:  python3 <skill>/scripts/finalize_report.py report.html
+       That inlines the vendored chart libraries into this one file and verifies it
+       is offline-safe. Until then the two LIB placeholders near the bottom stay as
+       comments and every chart shows a "library not inlined" banner.
+  Language: lang="zh-CN" below; switch to lang="en" (and translate the section names)
+  for an English report.
+  Delete this comment block before delivering the report.
+-->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -4012,28 +4034,28 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
 
   /* ---------- 2. ECharts ---------- */
   var instances = [];
+  function fail(host, cls, msg) {          /* a broken chart must LOOK broken, never blank */
+    host.textContent = '';
+    host.style.height = 'auto';
+    host.appendChild(text(cls, msg));
+  }
   function initCharts() {
     var tags = document.querySelectorAll('script[data-chart-for]');
     if (!tags.length) return;
     var libReady = typeof window.echarts !== 'undefined';
     Array.prototype.forEach.call(tags, function (tag) {
       var host = document.getElementById(tag.getAttribute('data-chart-for'));
-      if (!host) return;
-      if (!libReady) {
-        host.textContent = '';
-        host.appendChild(text('lib-missing', MISSING));
-        host.style.height = 'auto';
-        return;
-      }
+      if (!host) return;                   /* orphan config — nothing to draw into */
       var option;
       try {
+        /* Parse before checking the library: a JSON mistake gets reported even in a
+           report that has not been finalized yet, so the author sees it earlier. */
         option = JSON.parse(tag.textContent);
       } catch (e) {
-        host.textContent = '';
-        host.style.height = 'auto';
-        host.appendChild(text('chart-error', '\u26a0 chart config error \u2014 invalid JSON: ' + e.message));
+        fail(host, 'chart-error', '\u26a0 chart config error \u2014 invalid JSON: ' + e.message);
         return;
       }
+      if (!libReady) { fail(host, 'lib-missing', MISSING); return; }
       try {
         if (!option.color) option.color = PALETTE;
         if (option.animation === undefined) option.animation = false;   /* stable for print/screenshot */
@@ -4042,9 +4064,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         inst.setOption(option);
         instances.push(inst);
       } catch (e) {
-        host.textContent = '';
-        host.style.height = 'auto';
-        host.appendChild(text('chart-error', '\u26a0 chart config error \u2014 ' + e.message));
+        fail(host, 'chart-error', '\u26a0 chart config error \u2014 ' + e.message);
       }
     });
   }
