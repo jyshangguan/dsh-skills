@@ -86,4 +86,4 @@ When the user corrects the report or the process, run mode `update`: revise the 
 
 ## Setup
 
-`bash scripts/vendor.sh` once per checkout (it downloads pinned ECharts + Mermaid into `assets/vendor/` and records versions and SHA-256). If `finalize_report.py` reports a missing library, run it. Everything else works offline.
+The pinned ECharts + Mermaid bundles are committed under `assets/vendor/`, so reports work offline out of the box. Run `bash scripts/vendor.sh` only when `finalize_report.py` reports a missing library, or when deliberately re-pinning a version (it re-downloads and records versions + SHA-256 in `MANIFEST.md`).
