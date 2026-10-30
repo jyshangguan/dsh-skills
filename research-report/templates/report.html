@@ -386,28 +386,28 @@ flowchart TD
 
   /* ---------- 2. ECharts ---------- */
   var instances = [];
+  function fail(host, cls, msg) {          /* a broken chart must LOOK broken, never blank */
+    host.textContent = '';
+    host.style.height = 'auto';
+    host.appendChild(text(cls, msg));
+  }
   function initCharts() {
     var tags = document.querySelectorAll('script[data-chart-for]');
     if (!tags.length) return;
     var libReady = typeof window.echarts !== 'undefined';
     Array.prototype.forEach.call(tags, function (tag) {
       var host = document.getElementById(tag.getAttribute('data-chart-for'));
-      if (!host) return;
-      if (!libReady) {
-        host.textContent = '';
-        host.appendChild(text('lib-missing', MISSING));
-        host.style.height = 'auto';
-        return;
-      }
+      if (!host) return;                   /* orphan config — nothing to draw into */
       var option;
       try {
+        /* Parse before checking the library: a JSON mistake gets reported even in a
+           report that has not been finalized yet, so the author sees it earlier. */
         option = JSON.parse(tag.textContent);
       } catch (e) {
-        host.textContent = '';
-        host.style.height = 'auto';
-        host.appendChild(text('chart-error', '\u26a0 chart config error \u2014 invalid JSON: ' + e.message));
+        fail(host, 'chart-error', '\u26a0 chart config error \u2014 invalid JSON: ' + e.message);
         return;
       }
+      if (!libReady) { fail(host, 'lib-missing', MISSING); return; }
       try {
         if (!option.color) option.color = PALETTE;
         if (option.animation === undefined) option.animation = false;   /* stable for print/screenshot */
@@ -416,9 +416,7 @@ flowchart TD
         inst.setOption(option);
         instances.push(inst);
       } catch (e) {
-        host.textContent = '';
-        host.style.height = 'auto';
-        host.appendChild(text('chart-error', '\u26a0 chart config error \u2014 ' + e.message));
+        fail(host, 'chart-error', '\u26a0 chart config error \u2014 ' + e.message);
       }
     });
   }
