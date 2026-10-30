@@ -1,0 +1,460 @@
+<!doctype html>
+<!--
+  research-report · self-contained HTML report skeleton
+  ======================================================
+  HOW TO USE (the agent):
+    1. Copy this file to the user's project as report.html (or <topic>-report.html).
+    2. Fill every [方括号占位符]. Delete every block marked "DELETE IF UNUSED".
+    3. Add or remove <section> blocks as the research needs; keep the canonical
+       order: 核心结论 → 研究逻辑 → 关键发现 → 局限与不确定性 → 附录.
+    4. Keep <h2>/<h3> as the only heading levels that carry structure: the table of
+       contents is generated from them at runtime. Do NOT hand-write the TOC.
+    5. Charts: pair a div (class "chart", unique id fig-N, inline height in px) with a
+       following script block of type application/json that carries that ECharts
+       option — see the two examples below. The init code at the bottom of this file
+       is FIXED: never edit or delete it, and never load a chart library from a URL.
+    6. Finish with:  python3 <skill>/scripts/finalize_report.py report.html
+       That inlines the vendored chart libraries into this one file and verifies it
+       is offline-safe. Until then the two LIB placeholders near the bottom stay as
+       comments and every chart shows a "library not inlined" banner.
+  Language: lang="zh-CN" below; switch to lang="en" (and translate the section names)
+  for an English report.
+  Delete this comment block before delivering the report.
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- REPLACE: the <title> with the report title (kept short: it becomes the browser tab and the PDF filename). -->
+<title>[报告标题] · 研究报告</title>
+<style>
+  /* ---- one inline stylesheet; no webfonts, no external css, ever ---- */
+  :root{
+    --ink:#1c2430; --ink-soft:#4a5666; --line:#e2e7ee; --bg-soft:#f6f8fa;
+    --accent:#0077BB; --accent-soft:#eef6fb; --warn:#b3261e; --warn-soft:#fdf1ef;
+    --max:900px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0 auto; padding:2.5rem 1.25rem 4rem; max-width:var(--max);
+    color:var(--ink); background:#fff; line-height:1.7;
+    font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;
+    font-size:16px;
+  }
+  /* ---- headings ---- */
+  h1{font-size:1.75rem; line-height:1.3; margin:0 0 .5rem; letter-spacing:.01em; font-weight:700}
+  h2{font-size:1.3rem; margin:2.4rem 0 .9rem; padding-bottom:.35rem; border-bottom:1px solid var(--line); font-weight:650}
+  h3{font-size:1.15rem; margin:1.6rem 0 .6rem; font-weight:600}
+  h4{font-size:1rem; margin:1.2rem 0 .4rem; font-weight:600; color:var(--ink-soft)}
+  p,ul,ol{margin:.7rem 0}
+  li{margin:.25rem 0}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  strong{font-weight:650}
+  code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.88em; background:var(--bg-soft); padding:.1em .35em; border-radius:3px}
+  pre{background:var(--bg-soft); padding:.8rem 1rem; border-radius:6px; overflow:auto; border:1px solid var(--line); line-height:1.5}
+  pre code{background:none; padding:0}
+  blockquote{margin:1rem 0; padding:.1rem 1rem; color:var(--ink-soft); border-left:3px solid var(--line)}
+  hr{border:0; border-top:1px solid var(--line); margin:2rem 0}
+
+  /* ---- header block ---- */
+  .report-head{margin-bottom:1.5rem}
+  .meta{font-size:.85rem; color:var(--ink-soft); margin:.4rem 0 0; display:flex; flex-wrap:wrap; gap:.35rem .6rem; align-items:baseline}
+  .meta .k{font-weight:600; color:var(--ink)}
+  .meta .disclose{background:var(--bg-soft); border:1px solid var(--line); border-radius:4px; padding:.05rem .4rem}
+  .meta .sep{color:var(--line)}
+
+  /* ---- auto-generated table of contents ---- */
+  #toc{margin:1.2rem 0 0; padding:.75rem 1rem; background:var(--bg-soft); border:1px solid var(--line); border-radius:6px; font-size:.9rem}
+  #toc .toc-title{font-weight:600; font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 .35rem}
+  #toc ul{list-style:none; margin:0; padding:0}
+  #toc li.lvl-h3{padding-left:1.1rem; font-size:.86rem}
+  #toc a{color:var(--ink-soft)}
+  #toc a:hover{color:var(--accent)}
+
+  /* ---- BLUF callout: the bottom line up front ---- */
+  .bluf{background:var(--accent-soft); border-left:4px solid var(--accent); border-radius:0 6px 6px 0; padding:.9rem 1.15rem; margin:1.4rem 0}
+  .bluf > p:first-of-type{font-size:1.05rem; font-weight:600; margin-top:0}
+  .bluf ul{margin:.4rem 0 .2rem; padding-left:1.3rem}
+  .bluf .ask{display:block; margin-top:.6rem; font-size:.92rem; color:var(--ink-soft)}
+
+  /* ---- tables ---- */
+  table{border-collapse:collapse; width:100%; margin:1.1rem 0; font-size:.92rem}
+  th,td{padding:.45rem .6rem; border-bottom:1px solid var(--line); text-align:left; vertical-align:top}
+  thead th{border-bottom:2px solid #cfd7e1; font-weight:650; white-space:nowrap}
+  tbody tr:nth-child(even){background:var(--bg-soft)}
+  caption{caption-side:top; text-align:left; font-size:.85rem; color:var(--ink-soft); padding-bottom:.35rem}
+  /* numeric columns: add class="num" on the th/td to right-align them */
+  .num{text-align:right; font-variant-numeric:tabular-nums}
+
+  /* ---- figures (chart + caption) ---- */
+  figure{margin:1.4rem 0; padding:0}
+  figcaption{font-size:.86rem; color:var(--ink-soft); margin-top:.5rem; line-height:1.55}
+  figcaption .fignum{font-weight:650; color:var(--ink)}
+  .chart{width:100%; min-height:220px}
+  .chart-error,.mermaid-error,.lib-missing{
+    padding:.6rem .8rem; border-radius:6px; font-size:.85rem; line-height:1.5;
+    color:var(--warn); background:var(--warn-soft); border:1px solid #f0c8c2; margin:.4rem 0;
+  }
+  .lib-missing{font-weight:600}
+  .mermaid{background:#fff; border:1px solid var(--line); border-radius:6px; padding:.8rem; overflow:auto; text-align:center}
+  .mermaid svg{max-width:100%; height:auto}
+  .table-scroll{overflow-x:auto}
+
+  /* ---- collapsible appendix ---- */
+  details{margin:.9rem 0; border:1px solid var(--line); border-radius:6px; padding:.15rem .9rem; background:#fff}
+  details[open]{background:var(--bg-soft)}
+  summary{cursor:pointer; font-weight:600; padding:.45rem 0; font-size:.95rem; list-style-position:outside}
+  summary:hover{color:var(--accent)}
+  details > *:last-child{margin-bottom:.7rem}
+
+  .footnote,.src{font-size:.85rem; color:var(--ink-soft)}
+  .footnote{margin-top:2.5rem; padding-top:1rem; border-top:1px solid var(--line)}
+  .backtop{font-size:.8rem; text-align:right; margin-top:.6rem}
+
+  /* ---- narrow screens ---- */
+  @media (max-width:560px){
+    body{padding:1.5rem .9rem 3rem}
+    h1{font-size:1.5rem}
+    .meta{font-size:.8rem}
+  }
+
+  /* ---- print / PDF: black-friendly, no nav, keep figures whole ---- */
+  @media print{
+    body{max-width:none; padding:0; color:#000; font-size:11pt; line-height:1.5}
+    #toc,.backtop,.lib-missing{display:none !important}
+    a{color:#000}
+    a[href^="http"]::after{content:" (" attr(href) ")"; font-size:.8em; color:#444; word-break:break-all}
+    .bluf{background:#fff; border-left:4px solid #000}
+    h2{break-after:avoid}
+    figure,table,tr,.mermaid,pre,details{break-inside:avoid; page-break-inside:avoid}
+    thead{display:table-header-group}
+  }
+</style>
+</head>
+<body id="top">
+
+<header class="report-head">
+  <!-- REPLACE: the report title. Keep it a finding, not a topic —
+       "补贴使中小卖家留存率提升 12%" beats "关于补贴的研究". One <h1> only. -->
+  <h1>[报告标题：写成一句结论，而不是一个主题]</h1>
+
+  <!-- REPLACE: every meta value. 类型 = quick（单问句速查）| full（多问句研究）。
+       生成 = model + harness + whether a human re-checked it: required disclosure. -->
+  <p class="meta">
+    <span><span class="k">日期</span> <time datetime="2026-01-01">2026-01-01</time></span>
+    <span class="sep">/</span>
+    <span><span class="k">类型</span> full</span>
+    <span class="sep">/</span>
+    <span><span class="k">语言</span> zh-CN</span>
+    <span class="sep">/</span>
+    <span class="disclose">由 [模型名] 经 [Agent/Harness] 生成，[已人工复核 / 未人工复核]</span>
+  </p>
+
+  <!-- DO NOT EDIT: contents of this nav are generated by the fixed script at the
+       bottom of the file from the h2/h3 elements below. -->
+  <nav id="toc" aria-label="目录"></nav>
+</header>
+
+<main>
+
+  <!-- ===================== 1. BLUF / 核心结论 =====================
+       1–3 sentences: the answer first. Then ≤3 key points. Then the ask, if any.
+       A reader who stops here should still act correctly. -->
+  <section>
+    <h2 id="bluf">核心结论（BLUF）</h2>
+    <div class="bluf">
+      <p>[一句话给出答案：研究问题最终的那句结论。]</p>
+      <ul>
+        <li>[支撑点 1 — 带一个数字或来源]</li>
+        <li>[支撑点 2]</li>
+        <li>[支撑点 3 — 可省略]</li>
+      </ul>
+      <span class="ask"><strong>下一步</strong>：[需要读者做什么；没有就删掉这一行]</span>
+    </div>
+  </section>
+
+  <!-- ===================== 2. 研究逻辑 =====================
+       What was done and why: the question, how it was decomposed, what was looked
+       at, how it was measured, and what was excluded. Write it so a reader can
+       judge credibility without re-doing the work. -->
+  <section>
+    <h2 id="logic">研究逻辑</h2>
+    <p>[问题拆解：把原始问题分成几个可回答的子问题，各对应下面的哪一节。]</p>
+    <ul>
+      <li>[数据来源 / 检索范围 / 时间窗]</li>
+      <li>[方法与判据：怎么算的、怎么选的、阈值定在哪]</li>
+      <li>[明确排除项：没查什么、为什么可以不管]</li>
+    </ul>
+
+    <!-- DELETE IF UNUSED: Mermaid diagram block. The text inside <pre> IS the
+         source; it is rendered into SVG at load. Keep it ASCII-light: no HTML
+         tags inside labels. Delete this whole <figure> if the report has no diagram. -->
+    <figure>
+      <pre class="mermaid">
+flowchart TD
+    Q[原始问题] --> D1[子问题：现状]
+    Q --> D2[子问题：归因]
+    D1 --> M[量化对比]
+    D2 --> M
+    M --> C[结论与不确定性]
+      </pre>
+      <figcaption><span class="fignum">图 0</span> — 研究路径：问题如何被拆成子问题并汇到量化对比。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== 3. 关键发现 =====================
+       One h3 per finding. Order by decision-relevance, not by discovery order.
+       Structure per finding: claim → evidence (chart or table) → what it means.
+       Every quantitative claim gets a figure or a table behind it. -->
+  <section>
+    <h2 id="findings">关键发现</h2>
+
+    <h3 id="f1">[发现 1：写成一句可被判真的陈述]</h3>
+    <p>[先给论断，再给证据：这一条为什么成立。]</p>
+
+    <!-- ECharts figure. Copy this pair per chart: a host div (height in px, inline)
+         and a JSON script tagged with data-chart-for pointing at that div id.
+         ids must be unique: fig-1, fig-2, …  REPLACE the JSON option below. -->
+    <figure>
+      <div class="chart" id="fig-1" style="height:340px"></div>
+      <figcaption><span class="fignum">图 1</span> — [图表讲了什么，一句结论式的读法]。来源：[数据出处]。</figcaption>
+    </figure>
+    <script type="application/json" data-chart-for="fig-1">
+{
+  "tooltip": {"trigger": "axis"},
+  "legend": {"data": ["实验组", "对照组"], "top": 0},
+  "grid": {"left": 48, "right": 24, "top": 40, "bottom": 40, "containLabel": true},
+  "xAxis": {"type": "category", "data": ["W1", "W2", "W3", "W4", "W5", "W6"], "name": "周次"},
+  "yAxis": {"type": "value", "name": "留存率 %", "max": 100},
+  "series": [
+    {"name": "实验组", "type": "bar", "data": [61, 64, 68, 70, 72, 73], "barMaxWidth": 26},
+    {"name": "对照组", "type": "line", "data": [60, 61, 62, 62, 63, 63], "smooth": true}
+  ]
+}
+    </script>
+
+    <h3 id="f2">[发现 2]</h3>
+    <p>[论断 + 证据。]</p>
+
+    <!-- Second chart: shows the same pattern with a line/trend. DELETE IF UNUSED. -->
+    <figure>
+      <div class="chart" id="fig-2" style="height:300px"></div>
+      <figcaption><span class="fignum">图 2</span> — [一句读法]。来源：[数据出处]。</figcaption>
+    </figure>
+    <script type="application/json" data-chart-for="fig-2">
+{
+  "tooltip": {"trigger": "axis"},
+  "grid": {"left": 48, "right": 24, "top": 30, "bottom": 40, "containLabel": true},
+  "xAxis": {"type": "category", "data": ["1月", "2月", "3月", "4月", "5月", "6月"]},
+  "yAxis": {"type": "value", "name": "成本（元/单）"},
+  "series": [{"name": "履约成本", "type": "line", "areaStyle": {}, "data": [9.4, 8.8, 8.1, 7.6, 7.2, 6.9]}]
+}
+    </script>
+
+    <!-- Table alternative: when the numbers are the point, prefer a table over a
+         chart. class="num" right-aligns numeric columns. -->
+    <div class="table-scroll">
+      <table>
+        <caption>表 1 — [一句话说明这张表在比什么]。</caption>
+        <thead>
+          <tr><th>维度</th><th class="num">实验组</th><th class="num">对照组</th><th class="num">差值</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>[指标 1]</td><td class="num">[0.00]</td><td class="num">[0.00]</td><td class="num">[+0.00]</td></tr>
+          <tr><td>[指标 2]</td><td class="num">[0.00]</td><td class="num">[0.00]</td><td class="num">[+0.00]</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== 4. 局限与不确定性 =====================
+       Non-negotiable section: sample size, coverage gaps, source freshness,
+       contested claims, and what would change the conclusion. Name the confidence
+       level. If everything is certain, this section is where you say so and why. -->
+  <section>
+    <h2 id="limits">局限与不确定性</h2>
+    <ul>
+      <li><strong>样本与覆盖</strong>：[多大、多新、漏了什么]。</li>
+      <li><strong>口径与可比性</strong>：[定义差异、时间窗差异]。</li>
+      <li><strong>置信度</strong>：[高/中/低] — 结论 [X] 在 [条件] 下可能反转。</li>
+      <li><strong>未决问题</strong>：[还需要什么数据才能确定]。</li>
+    </ul>
+  </section>
+
+  <!-- ===================== 5. 附录 =====================
+       Everything that supports but does not belong in the narrative: method
+       details, full data, source list, the raw retrieval log. Collapsed so the
+       reader chooses to open it. -->
+  <section>
+    <h2 id="appendix">附录</h2>
+
+    <details>
+      <summary>A. 方法与口径细节</summary>
+      <p>[抽取规则、清洗步骤、公式、随机种子/抽样方式。]</p>
+      <pre><code>[关键计算片段或伪代码]</code></pre>
+    </details>
+
+    <details>
+      <summary>B. 数据表</summary>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>[列]</th><th class="num">[数值列]</th><th>[备注]</th></tr></thead>
+          <tbody>
+            <tr><td>[…]</td><td class="num">[…]</td><td>[…]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <!-- Source list. In the real report put each source's URL in the 来源 cell as an
+         ordinary hyperlink — citation links are allowed; the offline check only bans
+         resources the browser would LOAD (a script src, a link href, an img src, a CSS
+         url()). The placeholders below carry no links so this template stays neutral. -->
+    <details>
+      <summary>C. 来源清单</summary>
+      <table>
+        <thead><tr><th>#</th><th>来源（标题 + 超链接）</th><th>用途</th><th>获取日期</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>[来源标题] → [超链接]</td><td>[支撑哪个发现]</td><td>2026-01-01</td></tr>
+          <tr><td>2</td><td>[来源标题] → [超链接]</td><td>[…]</td><td>2026-01-01</td></tr>
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+</main>
+
+<footer>
+  <p class="footnote">
+    [报告生成说明：工具、时间窗、复核状态。数字为四舍五入到 [n] 位。]
+    <!-- 若图表在打印/邮件里不需要交互，可改用 Markdown 输出模式（templates/report.md）。 -->
+  </p>
+  <p class="backtop"><a href="#top">↑ 回到顶部</a></p>
+</footer>
+
+<!-- ========================================================================
+     FIXED CODE BELOW — the agent copies it verbatim and never edits it.
+     Two library placeholders are replaced by finalize_report.py with the
+     vendored bundle inlined, but only when the report actually uses that
+     library (data-chart-for → ECharts, mermaid blocks → Mermaid). Unused
+     placeholders are deleted, so a chart-free report stays a few KB.
+     Running that step is mandatory; until then charts show a visible banner.
+     ======================================================================== -->
+<!--LIB:echarts-->
+<!--LIB:mermaid-->
+<script>
+/* Fixed runtime: auto TOC + ECharts + Mermaid. No network, no modules. */
+(function () {
+  'use strict';
+  var PALETTE = ['#0077BB', '#33BBEE', '#009988', '#EE7733', '#CC3311', '#EE3377', '#BBBBBB', '#000000'];
+  var MISSING = '\u26a0 chart library not inlined \u2014 run finalize_report.py';
+  var FONT = 'system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif';
+
+  function text(cls, msg) {
+    var d = document.createElement('div');
+    d.className = cls;
+    d.textContent = msg;          /* textContent: a bad config can never inject markup */
+    return d;
+  }
+
+  /* ---------- 1. table of contents from h2/h3 ---------- */
+  function buildTOC() {
+    var nav = document.getElementById('toc');
+    if (!nav) return;
+    var heads = document.querySelectorAll('main h2, main h3');
+    if (!heads.length) { nav.parentNode.removeChild(nav); return; }
+    var title = text('toc-title', '\u76ee\u5f55');
+    var ul = document.createElement('ul');
+    Array.prototype.forEach.call(heads, function (h) {
+      if (!h.id) {
+        h.id = 'sec-' + (h.textContent.trim().slice(0, 24).replace(/\s+/g, '-') || 'x') +
+               '-' + Array.prototype.indexOf.call(heads, h);
+      }
+      var li = document.createElement('li');
+      li.className = 'lvl-' + h.tagName.toLowerCase();
+      var a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.textContent = h.textContent.trim();
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    nav.appendChild(title);      /* .toc-title is a div, styled via #toc */
+    nav.appendChild(ul);
+  }
+
+  /* ---------- 2. ECharts ---------- */
+  var instances = [];
+  function initCharts() {
+    var tags = document.querySelectorAll('script[data-chart-for]');
+    if (!tags.length) return;
+    var libReady = typeof window.echarts !== 'undefined';
+    Array.prototype.forEach.call(tags, function (tag) {
+      var host = document.getElementById(tag.getAttribute('data-chart-for'));
+      if (!host) return;
+      if (!libReady) {
+        host.textContent = '';
+        host.appendChild(text('lib-missing', MISSING));
+        host.style.height = 'auto';
+        return;
+      }
+      var option;
+      try {
+        option = JSON.parse(tag.textContent);
+      } catch (e) {
+        host.textContent = '';
+        host.style.height = 'auto';
+        host.appendChild(text('chart-error', '\u26a0 chart config error \u2014 invalid JSON: ' + e.message));
+        return;
+      }
+      try {
+        if (!option.color) option.color = PALETTE;
+        if (option.animation === undefined) option.animation = false;   /* stable for print/screenshot */
+        option.textStyle = option.textStyle || { fontFamily: FONT };
+        var inst = window.echarts.init(host);
+        inst.setOption(option);
+        instances.push(inst);
+      } catch (e) {
+        host.textContent = '';
+        host.style.height = 'auto';
+        host.appendChild(text('chart-error', '\u26a0 chart config error \u2014 ' + e.message));
+      }
+    });
+  }
+
+  /* ---------- 3. Mermaid ---------- */
+  function initMermaid() {
+    var blocks = document.querySelectorAll('.mermaid');
+    if (!blocks.length) return;
+    if (typeof window.mermaid === 'undefined') {
+      Array.prototype.forEach.call(blocks, function (b) { b.appendChild(text('lib-missing', MISSING)); });
+      return;
+    }
+    window.mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', fontFamily: FONT });
+    /* run() is async; a parse error in one block must not hide the others. */
+    window.mermaid.run({ querySelector: '.mermaid' }).catch(function (err) {
+      Array.prototype.forEach.call(document.querySelectorAll('.mermaid'), function (b) {
+        if (!b.querySelector('svg')) b.appendChild(text('mermaid-error', '\u26a0 diagram error \u2014 ' + (err && err.message ? err.message : err)));
+      });
+    });
+  }
+
+  /* ---------- 4. responsive resize (incl. charts inside a closed <details>) ---------- */
+  function resizeAll() { for (var i = 0; i < instances.length; i++) { try { instances[i].resize(); } catch (e) {} } }
+  var raf = 0;
+  window.addEventListener('resize', function () {
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(resizeAll);
+  });
+  document.addEventListener('toggle', function (ev) {
+    if (ev.target && ev.target.tagName === 'DETAILS') requestAnimationFrame(resizeAll);
+  }, true);
+
+  buildTOC();
+  initCharts();
+  initMermaid();
+})();
+</script>
+</body>
+</html>
