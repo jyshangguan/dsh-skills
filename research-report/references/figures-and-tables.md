@@ -14,6 +14,7 @@ Scope: HTML reports render ECharts for data charts and Mermaid for diagrams. Mar
 6. Mermaid snippets
 7. Figure package contract
 8. Table design rules
+8a. Verification & change evidence tables
 9. Anti-patterns
 10. Accessibility
 
@@ -37,6 +38,11 @@ Match the data shape and the question; the first matching row wins.
 | Timeline / interaction sequence | Mermaid sequence diagram; gantt for schedules | Bar chart of steps |
 | Decision logic | Mermaid flowchart with `{}` decision nodes | Nested if-bullets |
 | Causal chain | Mermaid flowchart, one edge per causal claim | Causal chains in prose |
+| Before/after benchmark (few runs, n < 8 per arm) | Grouped bar of medians (snippet B) + a stats table with spread (§8a) | Error bars (impossible in JSON-only ECharts); single best run |
+| Before/after distribution (n ≥ 8 per arm) | Boxplot (snippet E) or paired scatter | Two overlaid histograms |
+| Run-to-run stability / flakiness | Line chart of every run (snippet C shape) | Mean-only summary |
+| Change inventory (files, +/−) | Diffstat table (§8a) | Pie of lines changed |
+| Test results | Suite matrix table (§8a) | Bar chart of pass counts (a table is exact) |
 
 ## 2. When NOT to visualize
 
@@ -92,7 +98,7 @@ Run per figure before delivery. One fail = figure not done.
 
 ## 5. ECharts option snippets (JSON)
 
-The renderer consumes plain JSON option objects: no JS, no functions, no comments, no trailing commas. All four snippets are complete and parse as-is; start from the closest one, replace names and `data`, keep `color` and `grid`.
+The renderer consumes plain JSON option objects: no JS, no functions, no comments, no trailing commas. All five snippets are complete and parse as-is; start from the closest one, replace names and `data`, keep `color` and `grid`.
 
 JSON-only substitutions:
 - Callback formatter → string template (`"axisLabel": {"formatter": "{value} ms"}`) or default value text via `label.show`.
@@ -186,6 +192,33 @@ JSON-only substitutions:
   ]
 }
 ```
+
+**E — Boxplot:** before/after distribution, n ≥ 8 per arm; native `boxplot` series — the only JSON-declarative way to show spread; y scales to the data, box position encodes values, not bar length from 0.
+
+```json
+{
+  "color": ["#0077BB", "#33BBEE", "#009988", "#EE7733", "#CC3311", "#EE3377", "#BBBBBB", "#000000"],
+  "tooltip": { "trigger": "item" },
+  "grid": { "left": 16, "right": 24, "top": 40, "bottom": 8, "containLabel": true },
+  "xAxis": {
+    "type": "category", "name": "Build", "nameLocation": "middle", "nameGap": 32,
+    "data": ["baseline", "patched"]
+  },
+  "yAxis": { "type": "value", "scale": true, "name": "Latency (ms)", "nameLocation": "middle", "nameGap": 44 },
+  "series": [
+    {
+      "name": "Run latency", "type": "boxplot",
+      "data": [[46, 52, 55, 59, 72], [31, 34, 36, 38, 45]]
+    }
+  ]
+}
+```
+
+Boxplot usage:
+- Compute the five-number summary `[min, Q1, median, Q3, max]` from the raw runs yourself — the renderer parses JSON and computes nothing.
+- Raw n and the run protocol (warmup, interleaving, pinned CPU) go in the subtitle; n < 8 per arm is too few for a stable box — use the stats table with spread (§8a) instead.
+- Pair with the benchmark stats table (§8a) whenever exact values matter: the box shows shape, the table serves lookups.
+- Error bars are unavailable in every snippet: the vendored ECharts has no error-bar series, and drawing them needs a `custom` series with a `renderItem` JS callback — banned by the JSON-only contract.
 
 ## 6. Mermaid snippets
 
@@ -288,6 +321,20 @@ A chart is evidence only when it ships as a package: 4 text slots around the ren
 - Bold at most 3 cells — the ones that carry the finding.
 - A table gets a takeaway caption and a stated source, same as a figure (§7 applies).
 
+### 8a. Verification & change evidence tables
+
+The evidence shapes of an engineering change report: benchmark deltas, test outcomes, the diff inventory, claim-by-claim proof. Exact values are the deliverable, so the form is a table; the column order below is part of the pattern — keep it.
+
+| Pattern | Columns, in order | Rules |
+|---|---|---|
+| Benchmark stats (pyperf shape) | `metric` · `before (median±MAD)` · `after (median±MAD)` · `Δ%` · `n runs` · `noise floor note` | Median±MAD primary; mean±std secondary, and only when the distribution is skewed — say which. State N and warmup in the caption or subtitle. Judge Δ% against the measured noise floor: a delta inside the noise floor is "no measurable change", not an improvement. |
+| Test suite matrix | `suite` · `command` · `passed` · `failed` · `skipped` · `duration` · `new tests from this change` · `flaky` | Missing = "—" with a footnote, never 0. Flaky tests are named with their quarantine status; a flake is disclosed, never retried to green. Every failed row links or quotes its verbatim output in the appendix. |
+| Diffstat | `file` · `+` · `−` · `note` (one line: why this file changed) | The one-line shortstat — N files, +X/−Y — belongs in the BLUF; the table belongs in findings or the appendix. Never a pie chart of lines changed. |
+| Verification matrix | `claim` · `method` · `exact command` · `observed result` · `SHA` · `fresh-vs-final-tree` | One row per claim anywhere in the report; a claim with no row is a [GAP]. `observed result` quotes the exit code, counts, or one verbatim output line — "passed" is not a result. `SHA` names the tree the command ran on; `fresh-vs-final-tree` states whether it was re-run this session on the final tree — a green run only proves the tree it ran on. Prose-adjacent evidence: a normal table under the §8 rules, no special formatting. |
+
+- All §8 rules apply to these four: caption above with takeaway and source, numbers right-aligned, one rounding level per column, ≤7 columns — the suite matrix is the one 8-column exception; when it overflows, move `command` to the appendix, never drop a count column.
+- The benchmark stats table and its chart carry the same numbers (gate 8): the table is the lookup, the boxplot (snippet E) or grouped bar (snippet B) is the shape.
+
 ## 9. Anti-patterns
 
 | Pattern | Why it fails | Correct behavior |
@@ -304,6 +351,10 @@ A chart is evidence only when it ships as a package: 4 text slots around the ren
 | 10+ series on one axis | Spaghetti; palette exhausted | Small multiples |
 | Missing shown as 0 | Fabricates a measurement | `null` in JSON; "—" in tables |
 | One-bar chart of a single value | A number is not a chart | Text |
+| Error bars promised but impossible in JSON-only ECharts (needs `custom` + `renderItem` JS) | There is no error-bar series in the vendored build; the only construction is a JS callback, banned by the JSON-only contract, so the promised evidence cannot exist | Boxplot (snippet E) at n ≥ 8 per arm; a stats table with spread (§8a) below that |
+| Single best run shown as the benchmark | One run cannot separate signal from run-to-run noise, and the best run flatters the change | Median of N runs with spread and the noise floor (§8a) |
+| Pass-count bar chart instead of the suite table | One bar carries one number and hides command, duration, and flaky marks; the counts are few and exact | Suite matrix table (§8a) |
+| Diffstat as a pie/treemap | Angles and area rank poorly and hide the filenames; a change inventory is a lookup, not parts of a whole | Diffstat table (§8a) plus the shortstat line in the BLUF |
 
 ## 10. Accessibility
 

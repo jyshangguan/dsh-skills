@@ -6,7 +6,7 @@ Skills for the [DeepSeek Harness](https://github.com/deepseek-ai) (DSH) coding a
 
 ### `research-report`
 
-Turns finished **scientific research** or **code/program investigation** into a report a busy human can read: the bottom-line answer first, then a plain-language explanation of the logic of the work, then findings told as **figures and tables** instead of walls of jargon, then limits and next steps.
+Turns finished **scientific research**, **code/program investigation**, or an **engineering change** (scripts written / code improved to solve a problem) into a report a busy human can read: the bottom-line answer first, then a plain-language explanation of the logic of the work, then findings told as **figures and tables** instead of walls of jargon, then limits and next steps. For change reports the findings are verification evidence: a change manifest, a verification matrix (claim → command → observed result → SHA), benchmark/test results, and impact/rollback.
 
 - Output: a **self-contained offline HTML** file (vendored Mermaid diagrams + ECharts charts inlined — no CDN, opens from `file://`) or a **Markdown** report.
 - Language: Chinese or English, following the user.

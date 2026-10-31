@@ -1,6 +1,6 @@
 ---
 name: research-report
-description: "Write the report after scientific research or code/program investigation. Use when the user asks for a research report, findings write-up, investigation summary, deep-research result, or 汇报/报告/调研报告/研究报告/总结报告 — e.g. 写个报告、汇报一下、整理成报告、explain what you found, summarize the investigation. Produces a self-contained offline HTML report (vendored Mermaid diagrams and ECharts charts, no CDN) or a Markdown report, in Chinese or English. Structure: bottom-line answer first, then a plain-language explanation of the logic of the work, then findings told as figures/tables with interpretation, then limits and next steps. Supports quick/full/update modes and records its own lessons across runs. Do NOT use for academic paper manuscripts or journal submissions (a paper-writing workflow is a different genre), slide decks (use office-pptx), or plain chat answers that need no report artifact."
+description: "Write the report after scientific research, code/program investigation, or an engineering change (code or scripts changed to solve a problem). Use when the user asks for a research report, findings write-up, investigation summary, change/fix/implementation report, or 汇报/报告/调研报告/研究报告/总结报告/变更报告/修复报告/开发总结 — e.g. 写个报告、汇报一下、整理成报告、explain what you found, summarize the investigation or the fix. Produces a self-contained offline HTML report (inlined Mermaid + ECharts, no CDN) or a Markdown report, in Chinese or English. Structure: bottom-line answer first, then a plain-language explanation of the logic of the work, then findings told as figures/tables with interpretation — for code changes, a verification matrix tying claims to commands, observed results, and SHAs — then limits and next steps. Modes: quick/full/update; records its own lessons across runs. Do NOT use for academic paper manuscripts (use a paper-writing workflow), slide decks (use office-pptx), or plain chat answers that need no report artifact."
 ---
 
 # research-report
@@ -22,6 +22,7 @@ Turn finished work into a report a busy human can actually read. The anti-goal: 
 - **Charts are declarations, not code.** ECharts charts are option JSON in `<script type="application/json" data-chart-for="fig-1">`; diagrams are `<pre class="mermaid">`. Copy a tested snippet from `references/figures-and-tables.md` and change the data. Do not hand-write new JavaScript.
 - **Figure contract:** takeaway title (check its arithmetic), subtitle with units/scope/n, caption with what to see + data source + limitations, plus alt text.
 - **Numbers:** concept + unit + base/denominator + n + uncertainty. Missing is `—` or `[GAP]`, never `0`. Label illustrative numbers.
+- **Engineering change reports (variant c):** when the report covers code/scripts you wrote or improved, the findings carry verification evidence: a change manifest (curated diffstat, not a commit log), a verification matrix (claim → exact command → observed result → SHA → fresh against the final tree), benchmark/test/review blocks, and impact/risk/rollback. Self-reported success is not evidence. Recipe: `references/report-structure.md` §6.3.
 - **Language:** follow the user. Keep domain-standard terms in English when that is the convention; define every acronym at first use.
 
 ## Verify before delivering
@@ -70,13 +71,14 @@ When the user corrects the report or the process, run mode `update`: revise the 
 | Pie for time series, dual axes, truncated baselines, 3D | Misleads systematically | See the chart selection table |
 | Missing data reported as 0 | Falsifies aggregates downstream | `—` with a footnote |
 | Executive summary that restates the method | Wastes the only screen the reader is guaranteed to read | Answer + ≤3 key points + one next step |
+| "Tests pass" / "performance improved" with no command, observed output, or SHA | Self-reported success is not evidence; a stale run proves nothing about the final tree | Verification-matrix row; re-run against the final tree |
 
 ## Files
 
 | Task | File |
 |---|---|
-| Report anatomy, word budgets, self-check, IMRaD mapping, code-investigation variant | `references/report-structure.md` (Chinese: `references/report-structure.zh-CN.md`) |
-| Chart/table selection, quality gates, palettes, ECharts JSON and Mermaid snippets | `references/figures-and-tables.md` |
+| Report anatomy, word budgets, self-check, IMRaD mapping, code-investigation and engineering-change variants | `references/report-structure.md` (Chinese: `references/report-structure.zh-CN.md`) |
+| Chart/table selection, quality gates, palettes, ECharts JSON and Mermaid snippets, verification/change-evidence tables | `references/figures-and-tables.md` |
 | Plain language, number hygiene, bilingual conventions | `references/writing-style.md` |
 | Single-file HTML machinery, paths, figure markup, finalize/verify | `references/html-report.md` |
 | Accumulated lessons (read first, append after feedback) | `references/lessons.md` |

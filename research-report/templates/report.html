@@ -55,6 +55,15 @@
   code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.88em; background:var(--bg-soft); padding:.1em .35em; border-radius:3px}
   pre{background:var(--bg-soft); padding:.8rem 1rem; border-radius:6px; overflow:auto; border:1px solid var(--line); line-height:1.5}
   pre code{background:none; padding:0}
+  /* ---- diff excerpts (engineering change reports): key hunks only, ≤20 lines ---- */
+  /* every diff line is one span inside <pre class="diff">; white-space:normal here so
+     the source line-breaks BETWEEN block spans do not print as blank lines — inside a
+     span whitespace stays verbatim. The light add/del backgrounds must survive print. */
+  pre.diff{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.85rem; white-space:normal; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  pre.diff span{display:block; white-space:pre}
+  .diff-add{background:#e6f4ea; color:#116329}
+  .diff-del{background:#fdecea; color:#a40e26}
+  .diff-hunk{color:var(--ink-soft)}
   blockquote{margin:1rem 0; padding:.1rem 1rem; color:var(--ink-soft); border-left:3px solid var(--line)}
   hr{border:0; border-top:1px solid var(--line); margin:2rem 0}
 
@@ -321,6 +330,28 @@ flowchart TD
           <tr><td>2</td><td>[来源标题] → [超链接]</td><td>[…]</td><td>2026-01-01</td></tr>
         </tbody>
       </table>
+    </details>
+
+    <!-- DELETE IF UNUSED: diff excerpt — the engineering change genre (an agent
+         wrote/changed code to solve a problem). Rules: only key hunks, ≤20 diff
+         lines across the whole report (evidence for a claim, not a patch dump);
+         the full diff is never pasted — the appendix carries the exact command a
+         reader can run, e.g.  git diff <base>..<head> -- <path> ; every diff
+         excerpt states the file path and the SHA range — here in the <summary>,
+         in the <figcaption> when the excerpt sits in the narrative inside a
+         <figure>; one span per line; HTML-escape < > & in code lines. Content
+         below is illustrative — replace with the real hunks. -->
+    <details>
+      <summary>D. 关键改动摘录（diff） — src/parser.py · a3f21c..9b10e4</summary>
+      <pre class="diff">
+        <span class="diff-hunk">@@ -114,7 +114,9 @@ def load_config(path):</span>
+        <span class="diff-del">-    timeout = int(raw.get("timeout", 30))</span>
+        <span class="diff-add">+    timeout = int(raw.get("timeout", DEFAULT_TIMEOUT))</span>
+        <span class="diff-add">+    if timeout &lt; 1:</span>
+        <span class="diff-hunk">@@ -201,3 +203,3 @@ def run_batch(jobs):</span>
+        <span class="diff-del">-    for job in jobs: execute(job)</span>
+        <span class="diff-add">+    for job in jobs: execute(job, retry=MAX_RETRIES)</span>
+      </pre>
     </details>
   </section>
 

@@ -79,6 +79,29 @@ Use the tested snippets from `references/figures-and-tables.md`; short labels, �
 
 `class="num"` right-aligns numeric columns. Missing values render as `—` with a footnote, never `0`.
 
+## Diff excerpts (engineering change reports)
+
+When the finding is code you changed, show the key hunks — not the patch. The `.diff` style set lives in the template `<style>`; every excerpt line is one span inside `<pre class="diff">`:
+
+```html
+<details>
+  <summary>D. 关键改动摘录（diff） — src/parser.py · a3f21c..9b10e4</summary>
+  <pre class="diff">
+    <span class="diff-hunk">@@ -114,7 +114,9 @@ def load_config(path):</span>
+    <span class="diff-del">-    timeout = int(raw.get("timeout", 30))</span>
+    <span class="diff-add">+    timeout = int(raw.get("timeout", DEFAULT_TIMEOUT))</span>
+    <span>     retries = 3</span>   <!-- context line: a span with no class -->
+  </pre>
+</details>
+```
+
+- Classes: `diff-hunk` for `@@ … @@` headers, `diff-add` for `+` lines, `diff-del` for `-` lines; context lines are unclassed spans — one span per diff line.
+- HTML-escape `<`, `>`, `&` inside code lines.
+- **≤20 diff lines per report.** Key hunks only: evidence for a claim, never a file dump.
+- Never paste the full diff. The appendix records the exact command — `git diff <base>..<head> -- <path>` — so a reader can run it.
+- Every excerpt states the file path and the SHA range: here in the `<summary>`; in the narrative wrap the same block in a `<figure>` with a `<figcaption>` so it carries a 图 number.
+- Markdown mode uses `` ```diff `` fences instead (GitHub/GitLab render +/- colours natively), with a path+SHA line above each; same ≤20-line cap, same appendix-command rule.
+
 ## Finalize and verify
 
 ```bash

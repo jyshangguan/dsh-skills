@@ -80,6 +80,20 @@ xychart-beta
 <!-- xychart-beta 需要 Mermaid ≥ 10.6（GitHub、GitLab、mermaid.live 都支持）。
      渲染器不支持时不要硬撑：换成上面的表格，或用 HTML 输出模式跑真图表。 -->
 
+<!-- 工程变更报告（agent 改代码解决问题）：改动摘录用 ```diff 围栏 — GitHub/GitLab 原生
+     渲染 +/- 配色。规则与 HTML 模式相同：只贴关键 hunk，全篇合计 ≤20 行；完整 diff 永不
+     粘贴，附录写可复跑的确切命令（`git diff <base>..<head> -- <path>`）；每段摘录前一行
+     标出文件路径与 SHA 区间。下面内容仅为示意，换成真实 hunk。DELETE IF UNUSED. -->
+
+**关键改动摘录 — `src/parser.py` · a3f21c..9b10e4**
+
+```diff
+@@ -114,7 +114,9 @@ def load_config(path):
+-    timeout = int(raw.get("timeout", 30))
++    timeout = int(raw.get("timeout", DEFAULT_TIMEOUT))
++    if timeout < 1:
+```
+
 ## 局限与不确定性
 
 <!-- 必需章节，不可删。不确定的地方写清置信度与反转条件。 -->
