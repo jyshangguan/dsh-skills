@@ -8,6 +8,7 @@ The skill's own memory. **Read this before writing any report.** Append after us
 
 ---
 
+- **Check every aggregate in prose against its parts, not just figure titles** — a findings sentence claimed "153 行是双语结构规范" when the two structure files held 50+51=101 lines (153 silently folded in a third file); only a manual recompute at review caught it, while the chart data summed correctly all along. (2026-10-31, variant-c demo report)
 - **Declare charts as JSON + fixed renderer; never hand-write chart JavaScript in a report** — a single typo in a hand-written init loop silently kills every chart on the page; JSON errors are caught by the fixed renderer and shown visibly instead. (2026-10-30, skill design)
 - **State the logic of the work before its results** — a results-first report forces the reader to reconstruct the method from scattered clues, so they cannot judge the results. (2026-10-30, from research on report design)
 - **Plan the figure list before drafting prose** — drafting text first produces walls of text with figures bolted on afterwards, which is exactly the failure this skill exists to prevent. (2026-10-30, from research on report design)
